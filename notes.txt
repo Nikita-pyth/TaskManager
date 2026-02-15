@@ -1,0 +1,6 @@
+If you are watching this after Jan 2023, and you install SQLAlchemy using the pip install command, it will install version 2.0.x or above by default. The code at the 10:25:00 hr marker where you get count is incompatible with the new version of SQLAlchemy.
+I spent a few hours figuring out why my exact same code isn't working.
+Use the following command to install (or re-install) to a compatible version of SQLAlchemy
+pip install --force-reinstall -v "SQLAlchemy==1.4.46"
+
+Also, your PostOut pydantic schema should derive from BaseModel, not Post or PostBase.

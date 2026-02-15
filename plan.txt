@@ -1,0 +1,181 @@
+# Task Manager App — Architecture Plan
+
+## Context
+University course work project. A web-based task manager with FastAPI REST API, PostgreSQL, JWT auth, and a simple frontend — all running on one machine. The goal is to demonstrate solid developer skills without over-engineering.
+
+---
+
+## Tech Stack
+- **Backend:** FastAPI + Uvicorn
+- **Database:** PostgreSQL (localhost)
+- **ORM:** SQLAlchemy 2.0
+- **Migrations:** Alembic
+- **Auth:** JWT (python-jose) + bcrypt (passlib)
+- **Frontend:** Jinja2 templates + vanilla JS + plain CSS
+- **Config:** pydantic-settings + `.env` file
+
+---
+
+## Project Structure
+
+```
+kursach/
+├── app/
+│   ├── __init__.py
+│   ├── main.py              # App creation, router includes, static/template mount
+│   ├── config.py            # Settings class (DB URL, JWT secret, etc.)
+│   ├── database.py          # SQLAlchemy engine, session, Base
+│   ├── models.py            # ORM models: User, Task, Category
+│   ├── schemas.py           # Pydantic request/response schemas
+│   ├── auth.py              # Password hashing, JWT create/verify
+│   ├── dependencies.py      # get_db, get_current_user
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   ├── auth.py          # POST /api/auth/register, /api/auth/login
+│   │   ├── tasks.py         # CRUD /api/tasks
+│   │   ├── categories.py    # CRUD /api/categories
+│   │   └── pages.py         # HTML page routes (/, /login, /register, /dashboard)
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── login.html
+│   │   ├── register.html
+│   │   └── dashboard.html
+│   └── static/
+│       ├── css/style.css
+│       └── js/app.js
+├── alembic/
+│   ├── versions/
+│   └── env.py
+├── alembic.ini
+├── requirements.txt
+├── .env
+└── .gitignore
+```
+
+---
+
+## Database Schema (3 tables)
+
+### users
+| Column          | Type         | Constraints              |
+|-----------------|--------------|--------------------------|
+| id              | Integer      | PK, autoincrement        |
+| email           | String(255)  | UNIQUE, NOT NULL, INDEX  |
+| username        | String(100)  | UNIQUE, NOT NULL         |
+| hashed_password | String(255)  | NOT NULL                 |
+| created_at      | Timestamp(tz)| NOT NULL, default now()  |
+
+### categories
+| Column     | Type         | Constraints              |
+|------------|--------------|--------------------------|
+| id         | Integer      | PK, autoincrement        |
+| name       | String(100)  | NOT NULL                 |
+| user_id    | Integer      | FK -> users.id, NOT NULL |
+| created_at | Timestamp(tz)| NOT NULL, default now()  |
+
+### tasks
+| Column      | Type         | Constraints                    |
+|-------------|--------------|--------------------------------|
+| id          | Integer      | PK, autoincrement              |
+| title       | String(200)  | NOT NULL                       |
+| description | Text         | NULLABLE                       |
+| status      | String(20)   | NOT NULL, default 'todo'       |
+| priority    | String(10)   | NOT NULL, default 'medium'     |
+| due_date    | Date         | NULLABLE                       |
+| user_id     | Integer      | FK -> users.id, NOT NULL       |
+| category_id | Integer      | FK -> categories.id, NULLABLE  |
+| created_at  | Timestamp(tz)| NOT NULL, default now()        |
+| updated_at  | Timestamp(tz)| NOT NULL, default now()        |
+
+**Relationships:** User 1->N Tasks, User 1->N Categories, Category 1->N Tasks. Cascade delete from user.
+
+**Allowed values (enforced by Pydantic, not DB):**
+- status: `todo`, `in_progress`, `done`
+- priority: `low`, `medium`, `high`
+
+---
+
+## API Endpoints
+
+### Auth (no auth required)
+| Method | Path                | Description         |
+|--------|---------------------|---------------------|
+| POST   | /api/auth/register  | Create account      |
+| POST   | /api/auth/login     | Login, get JWT      |
+
+### Tasks (auth required)
+| Method | Path             | Description                    |
+|--------|------------------|--------------------------------|
+| GET    | /api/tasks       | List tasks (with filters/sort) |
+| POST   | /api/tasks       | Create task                    |
+| GET    | /api/tasks/{id}  | Get single task                |
+| PUT    | /api/tasks/{id}  | Update task                    |
+| DELETE | /api/tasks/{id}  | Delete task                    |
+
+**GET /api/tasks query params:** `status`, `priority`, `category_id`, `search`, `sort_by`, `order`
+
+### Categories (auth required)
+| Method | Path                  | Description       |
+|--------|-----------------------|-------------------|
+| GET    | /api/categories       | List categories   |
+| POST   | /api/categories       | Create category   |
+| DELETE | /api/categories/{id}  | Delete category   |
+
+### Pages (HTML)
+| Method | Path        | Description               |
+|--------|-------------|---------------------------|
+| GET    | /           | Redirect to login/dashboard|
+| GET    | /login      | Login page                |
+| GET    | /register   | Registration page         |
+| GET    | /dashboard  | Main task board           |
+
+---
+
+## Auth Flow
+1. Register: hash password with bcrypt, store user
+2. Login: verify password, return JWT token (HS256, 30min expiry, contains user_id)
+3. Frontend stores token in localStorage
+4. Every API request sends `Authorization: Bearer <token>` header
+5. `get_current_user` dependency decodes token, fetches user from DB, returns it to route
+
+---
+
+## Frontend Approach
+- Jinja2 renders HTML shells (templates)
+- `app.js` handles all data via `fetch()` calls to the API
+- JWT token managed in localStorage
+- No build tools, no npm, no framework — vanilla JS
+- Plain CSS (~200 lines) for clean, minimal styling
+
+---
+
+## Dependencies (requirements.txt)
+```
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+alembic
+python-jose[cryptography]
+passlib[bcrypt]
+python-dotenv
+pydantic-settings
+python-multipart
+jinja2
+```
+
+---
+
+## Implementation Order
+1. Project setup: folders, requirements.txt, venv, .env
+2. config.py + database.py (DB connection)
+3. models.py (User, Category, Task)
+4. Alembic init + first migration
+5. schemas.py (all Pydantic schemas)
+6. auth.py + dependencies.py (JWT + password utils)
+7. routers/auth.py (register + login) — test via Swagger
+8. routers/categories.py (CRUD) — test via Swagger
+9. routers/tasks.py (CRUD + filters) — test via Swagger
+10. routers/pages.py + templates (HTML pages)
+11. static/js/app.js + static/css/style.css (frontend logic)
+12. Polish: error handling, .gitignore, README
