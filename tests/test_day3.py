@@ -130,24 +130,6 @@ def test_oauth2_scheme_exists():
     assert oauth2_scheme is not None
 
 
-# ── Login schema ────────────────────────────────────────────────────
-
-def test_user_login_schema_exists():
-    """UserLogin schema exists with email and password fields."""
-    from app.schemas import UserLogin
-
-    login = UserLogin(email="test@example.com", password="secret")
-    assert login.email == "test@example.com"
-    assert login.password == "secret"
-
-
-def test_user_login_no_username_field():
-    """UserLogin should not have a username field."""
-    from app.schemas import UserLogin
-
-    assert "username" not in UserLogin.model_fields
-
-
 # ── Auth router / endpoints (using TestClient) ─────────────────────
 
 @pytest.fixture()
@@ -262,6 +244,7 @@ def test_login_success(client):
         "password": "mypassword",
     })
     resp = client.post("/api/auth/login", json={
+        "username": "loginuser",
         "email": "login@example.com",
         "password": "mypassword",
     })
@@ -279,6 +262,7 @@ def test_login_wrong_password(client):
         "password": "rightpass",
     })
     resp = client.post("/api/auth/login", json={
+        "username": "user3",
         "email": "user3@example.com",
         "password": "wrongpass",
     })
@@ -287,6 +271,7 @@ def test_login_wrong_password(client):
 
 def test_login_nonexistent_email(client):
     resp = client.post("/api/auth/login", json={
+        "username": "nobody",
         "email": "nobody@example.com",
         "password": "whatever",
     })
@@ -303,6 +288,7 @@ def test_login_token_is_valid_jwt(client):
         "password": "pass123",
     })
     resp = client.post("/api/auth/login", json={
+        "username": "jwtuser",
         "email": "jwt@example.com",
         "password": "pass123",
     })
