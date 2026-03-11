@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Task Manager{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">Task Manager</a>
+        <div class="nav-links" id="nav-links">
+            <a href="/login">Login</a>
+            <a href="/register">Register</a>
+        </div>
+        <div class="nav-links nav-auth" id="nav-auth" style="display:none;">
+            <a href="/dashboard">Dashboard</a>
+            <button id="logout-btn" class="btn btn-sm">Logout</button>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

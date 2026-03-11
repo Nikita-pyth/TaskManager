@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Task Manager{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Sidebar: categories -->
+    <aside class="sidebar">
+        <h2>Categories</h2>
+        <ul id="category-list" class="category-list"></ul>
+        <form id="add-category-form" class="add-category-form">
+            <input type="text" id="new-category-name" placeholder="New category" required>
+            <button type="submit" class="btn btn-sm">Add</button>
+        </form>
+    </aside>
+
+    <!-- Main content: tasks -->
+    <section class="task-section">
+        <!-- Filters -->
+        <div class="filters">
+            <select id="filter-status">
+                <option value="">All statuses</option>
+                <option value="todo">Todo</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Done</option>
+            </select>
+            <select id="filter-priority">
+                <option value="">All priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+            <select id="filter-category">
+                <option value="">All categories</option>
+            </select>
+            <input type="text" id="filter-search" placeholder="Search tasks...">
+            <select id="sort-by">
+                <option value="created_at">Date created</option>
+                <option value="due_date">Due date</option>
+                <option value="title">Title</option>
+                <option value="priority">Priority</option>
+            </select>
+            <select id="sort-order">
+                <option value="desc">Newest first</option>
+                <option value="asc">Oldest first</option>
+            </select>
+        </div>
+
+        <!-- Add task button -->
+        <button id="show-add-task" class="btn btn-primary">+ New Task</button>
+
+        <!-- Add task form (hidden by default) -->
+        <div id="task-form-wrapper" class="task-form-wrapper" style="display:none;">
+            <form id="task-form">
+                <input type="hidden" id="task-id" value="">
+                <label for="task-title">Title</label>
+                <input type="text" id="task-title" required placeholder="Task title">
+
+                <label for="task-description">Description</label>
+                <textarea id="task-description" rows="3" placeholder="Optional description"></textarea>
+
+                <div class="form-row">
+                    <div>
+                        <label for="task-status">Status</label>
+                        <select id="task-status">
+                            <option value="todo">Todo</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="task-priority">Priority</label>
+                        <select id="task-priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="task-due-date">Due date</label>
+                        <input type="date" id="task-due-date">
+                    </div>
+                    <div>
+                        <label for="task-category">Category</label>
+                        <select id="task-category">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" id="cancel-task" class="btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Task list -->
+        <div id="task-list" class="task-list"></div>
+        <p id="no-tasks-msg" class="empty-msg" style="display:none;">No tasks yet. Create one!</p>
+    </section>
+</div>
+{% endblock %}
