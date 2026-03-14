@@ -56,7 +56,6 @@ def auth_header(client):
         "password": "testpass",
     })
     resp = client.post("/api/auth/login", json={
-        "username": "day4user",
         "email": "day4@example.com",
         "password": "testpass",
     })
@@ -73,7 +72,6 @@ def other_auth_header(client):
         "password": "otherpass",
     })
     resp = client.post("/api/auth/login", json={
-        "username": "otheruser",
         "email": "other@example.com",
         "password": "otherpass",
     })

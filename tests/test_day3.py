@@ -244,7 +244,6 @@ def test_login_success(client):
         "password": "mypassword",
     })
     resp = client.post("/api/auth/login", json={
-        "username": "loginuser",
         "email": "login@example.com",
         "password": "mypassword",
     })
@@ -262,7 +261,6 @@ def test_login_wrong_password(client):
         "password": "rightpass",
     })
     resp = client.post("/api/auth/login", json={
-        "username": "user3",
         "email": "user3@example.com",
         "password": "wrongpass",
     })
@@ -271,7 +269,6 @@ def test_login_wrong_password(client):
 
 def test_login_nonexistent_email(client):
     resp = client.post("/api/auth/login", json={
-        "username": "nobody",
         "email": "nobody@example.com",
         "password": "whatever",
     })
@@ -288,7 +285,6 @@ def test_login_token_is_valid_jwt(client):
         "password": "pass123",
     })
     resp = client.post("/api/auth/login", json={
-        "username": "jwtuser",
         "email": "jwt@example.com",
         "password": "pass123",
     })
