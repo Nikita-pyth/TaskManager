@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 
 
 # ---------- User ----------
@@ -57,6 +57,13 @@ class TaskCreate(BaseModel):
     due_date: Optional[date] = None
     category_id: Optional[int] = None
 
+    @field_validator("due_date")
+    @classmethod
+    def due_date_not_in_past(cls, v):
+        if v is not None and v < date.today():
+            raise ValueError("Due date cannot be in the past")
+        return v
+
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -65,6 +72,13 @@ class TaskUpdate(BaseModel):
     priority: Optional[str] = None
     due_date: Optional[date] = None
     category_id: Optional[int] = None
+
+    @field_validator("due_date")
+    @classmethod
+    def due_date_not_in_past(cls, v):
+        if v is not None and v < date.today():
+            raise ValueError("Due date cannot be in the past")
+        return v
 
 
 class TaskOut(BaseModel):

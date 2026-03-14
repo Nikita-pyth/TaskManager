@@ -20,7 +20,7 @@ async function fetchAPI(url, options = {}) {
 
 function showError(msg) {
     const el = document.getElementById("error-msg");
-    if (el) { el.textContent = msg; el.style.display = "block"; }
+    if (el) { el.textContent = msg; el.style.display = "block"; el.className = "alert alert-danger"; }
 }
 
 function hideError() {
@@ -34,9 +34,11 @@ function updateNav() {
     const token = localStorage.getItem("token");
     const navLinks = document.getElementById("nav-links");
     const navAuth = document.getElementById("nav-auth");
+    const usernameEl = document.getElementById("nav-username");
     if (token) {
         if (navLinks) navLinks.style.display = "none";
-        if (navAuth) navAuth.style.display = "flex";
+        if (navAuth) { navAuth.style.display = "flex"; navAuth.classList.add("align-items-center"); }
+        if (usernameEl) usernameEl.textContent = localStorage.getItem("username") || "";
     } else {
         if (navLinks) navLinks.style.display = "flex";
         if (navAuth) navAuth.style.display = "none";
@@ -94,6 +96,7 @@ function initLogin() {
         if (resp.ok) {
             const data = await resp.json();
             localStorage.setItem("token", data.access_token);
+            localStorage.setItem("username", data.username);
             window.location.href = "/dashboard";
         } else {
             const data = await resp.json();
@@ -109,6 +112,7 @@ function initLogout() {
     if (!btn) return;
     btn.addEventListener("click", () => {
         localStorage.removeItem("token");
+        localStorage.removeItem("username");
         window.location.href = "/login";
     });
 }
@@ -127,11 +131,20 @@ async function loadCategories() {
 
 function renderCategoryList() {
     const ul = document.getElementById("category-list");
+    const noMsg = document.getElementById("no-categories-msg");
     if (!ul) return;
+
+    if (allCategories.length === 0) {
+        ul.innerHTML = "";
+        if (noMsg) noMsg.style.display = "block";
+        return;
+    }
+    if (noMsg) noMsg.style.display = "none";
+
     ul.innerHTML = allCategories.map(c => `
-        <li>
+        <li class="list-group-item">
             <span>${c.name}</span>
-            <button onclick="deleteCategory(${c.id})">&times;</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${c.id})">&times;</button>
         </li>
     `).join("");
 }
@@ -219,20 +232,22 @@ function renderTasks(tasks) {
     if (noMsg) noMsg.style.display = "none";
 
     list.innerHTML = tasks.map(t => `
-        <div class="task-card">
-            <div class="task-card-body">
-                <h3>${t.title}</h3>
-                ${t.description ? `<p>${t.description}</p>` : ""}
-                <div>
-                    <span class="badge badge-${t.status}">${t.status.replace("_", " ")}</span>
-                    <span class="badge badge-${t.priority}">${t.priority}</span>
-                    ${t.category_id ? `<span class="badge">${getCategoryName(t.category_id)}</span>` : ""}
-                    ${t.due_date ? `<span class="badge">Due: ${t.due_date}</span>` : ""}
+        <div class="card shadow-sm mb-2" data-task-id="${t.id}">
+            <div class="card-body py-2 task-card">
+                <div class="task-card-body">
+                    <h6 class="mb-1">${t.title}</h6>
+                    ${t.description ? `<p class="text-muted small mb-1">${t.description}</p>` : ""}
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge badge-${t.status}">${t.status.replace("_", " ")}</span>
+                        <span class="badge badge-${t.priority}">${t.priority}</span>
+                        ${t.category_id ? `<span class="badge bg-secondary">${getCategoryName(t.category_id)}</span>` : ""}
+                        ${t.due_date ? `<span class="badge bg-info text-dark">Due: ${t.due_date}</span>` : ""}
+                    </div>
                 </div>
-            </div>
-            <div class="task-card-actions">
-                <button class="btn btn-sm" onclick="editTask(${t.id})">Edit</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})">Del</button>
+                <div class="task-card-actions d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editTask(${t.id})">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(${t.id})">Del</button>
+                </div>
             </div>
         </div>
     `).join("");
@@ -250,6 +265,7 @@ function initTaskForm() {
 
     showBtn?.addEventListener("click", () => {
         resetTaskForm();
+        showBtn.after(wrapper);
         wrapper.style.display = "block";
         showBtn.style.display = "none";
     });
@@ -289,6 +305,14 @@ function initTaskForm() {
             wrapper.style.display = "none";
             showBtn.style.display = "inline-block";
             await loadTasks();
+        } else if (resp) {
+            const data = await resp.json();
+            const detail = data.detail;
+            if (Array.isArray(detail)) {
+                alert(detail.map(e => e.msg).join("\n"));
+            } else {
+                alert(detail || "Failed to save task");
+            }
         }
     });
 }
@@ -316,8 +340,14 @@ async function editTask(id) {
     document.getElementById("task-due-date").value = t.due_date || "";
     document.getElementById("task-category").value = t.category_id || "";
 
-    document.getElementById("task-form-wrapper").style.display = "block";
+    const wrapper = document.getElementById("task-form-wrapper");
+    const taskCard = document.querySelector(`[data-task-id="${id}"]`);
+    if (taskCard) {
+        taskCard.after(wrapper);
+    }
+    wrapper.style.display = "block";
     document.getElementById("show-add-task").style.display = "none";
+    wrapper.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 async function deleteTask(id) {

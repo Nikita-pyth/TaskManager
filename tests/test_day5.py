@@ -91,7 +91,7 @@ def test_js_served(client):
 
 def test_login_includes_navbar(client):
     resp = client.get("/login")
-    assert 'class="navbar"' in resp.text
+    assert 'class="navbar' in resp.text
     assert 'Task Manager' in resp.text
 
 

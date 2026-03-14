@@ -3,101 +3,125 @@
 {% block title %}Dashboard — Task Manager{% endblock %}
 
 {% block content %}
-<div class="dashboard">
+<div class="row g-4">
     <!-- Sidebar: categories -->
-    <aside class="sidebar">
-        <h2>Categories</h2>
-        <ul id="category-list" class="category-list"></ul>
-        <form id="add-category-form" class="add-category-form">
-            <input type="text" id="new-category-name" placeholder="New category" required>
-            <button type="submit" class="btn btn-sm">Add</button>
-        </form>
-    </aside>
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Categories</h5>
+                <ul id="category-list" class="list-group list-group-flush mb-3"></ul>
+                <p id="no-categories-msg" class="text-muted small text-center" style="display:none;">No categories yet.</p>
+                <form id="add-category-form" class="input-group input-group-sm">
+                    <input type="text" id="new-category-name" class="form-control" placeholder="New category" required>
+                    <button type="submit" class="btn btn-outline-primary">Add</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Main content: tasks -->
-    <section class="task-section">
+    <div class="col-md-9">
         <!-- Filters -->
-        <div class="filters">
-            <select id="filter-status">
-                <option value="">All statuses</option>
-                <option value="todo">Todo</option>
-                <option value="in_progress">In Progress</option>
-                <option value="done">Done</option>
-            </select>
-            <select id="filter-priority">
-                <option value="">All priorities</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-            </select>
-            <select id="filter-category">
-                <option value="">All categories</option>
-            </select>
-            <input type="text" id="filter-search" placeholder="Search tasks...">
-            <select id="sort-by">
-                <option value="created_at">Date created</option>
-                <option value="due_date">Due date</option>
-                <option value="title">Title</option>
-                <option value="priority">Priority</option>
-            </select>
-            <select id="sort-order">
-                <option value="desc">Newest first</option>
-                <option value="asc">Oldest first</option>
-            </select>
-        </div>
-
-        <!-- Add task button -->
-        <button id="show-add-task" class="btn btn-primary">+ New Task</button>
-
-        <!-- Add task form (hidden by default) -->
-        <div id="task-form-wrapper" class="task-form-wrapper" style="display:none;">
-            <form id="task-form">
-                <input type="hidden" id="task-id" value="">
-                <label for="task-title">Title</label>
-                <input type="text" id="task-title" required placeholder="Task title">
-
-                <label for="task-description">Description</label>
-                <textarea id="task-description" rows="3" placeholder="Optional description"></textarea>
-
-                <div class="form-row">
-                    <div>
-                        <label for="task-status">Status</label>
-                        <select id="task-status">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body py-2">
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <select id="filter-status" class="form-select form-select-sm">
+                            <option value="">All statuses</option>
                             <option value="todo">Todo</option>
                             <option value="in_progress">In Progress</option>
                             <option value="done">Done</option>
                         </select>
                     </div>
-                    <div>
-                        <label for="task-priority">Priority</label>
-                        <select id="task-priority">
+                    <div class="col-auto">
+                        <select id="filter-priority" class="form-select form-select-sm">
+                            <option value="">All priorities</option>
                             <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
+                            <option value="medium">Medium</option>
                             <option value="high">High</option>
                         </select>
                     </div>
-                    <div>
-                        <label for="task-due-date">Due date</label>
-                        <input type="date" id="task-due-date">
+                    <div class="col-auto">
+                        <select id="filter-category" class="form-select form-select-sm">
+                            <option value="">All categories</option>
+                        </select>
                     </div>
-                    <div>
-                        <label for="task-category">Category</label>
-                        <select id="task-category">
-                            <option value="">None</option>
+                    <div class="col">
+                        <input type="text" id="filter-search" class="form-control form-control-sm" placeholder="Search tasks...">
+                    </div>
+                    <div class="col-auto">
+                        <select id="sort-by" class="form-select form-select-sm">
+                            <option value="created_at">Date created</option>
+                            <option value="due_date">Due date</option>
+                            <option value="title">Title</option>
+                            <option value="priority">Priority</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select id="sort-order" class="form-select form-select-sm">
+                            <option value="desc">Newest first</option>
+                            <option value="asc">Oldest first</option>
                         </select>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <button type="button" id="cancel-task" class="btn">Cancel</button>
-                </div>
-            </form>
+        <!-- Add task button -->
+        <button id="show-add-task" class="btn btn-primary mb-3">+ New Task</button>
+
+        <!-- Add task form (hidden by default) -->
+        <div id="task-form-wrapper" class="card shadow-sm mb-3" style="display:none;">
+            <div class="card-body">
+                <form id="task-form">
+                    <input type="hidden" id="task-id" value="">
+                    <div class="mb-3">
+                        <label for="task-title" class="form-label">Title</label>
+                        <input type="text" id="task-title" class="form-control" required placeholder="Task title">
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-description" class="form-label">Description</label>
+                        <textarea id="task-description" class="form-control" rows="3" placeholder="Optional description"></textarea>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label for="task-status" class="form-label">Status</label>
+                            <select id="task-status" class="form-select">
+                                <option value="todo">Todo</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="task-priority" class="form-label">Priority</label>
+                            <select id="task-priority" class="form-select">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="task-due-date" class="form-label">Due date</label>
+                            <input type="date" id="task-due-date" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="task-category" class="form-label">Category</label>
+                            <select id="task-category" class="form-select">
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" id="cancel-task" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <!-- Task list -->
-        <div id="task-list" class="task-list"></div>
-        <p id="no-tasks-msg" class="empty-msg" style="display:none;">No tasks yet. Create one!</p>
-    </section>
+        <div id="task-list"></div>
+        <p id="no-tasks-msg" class="text-muted text-center py-4" style="display:none;">No tasks yet. Create one!</p>
+    </div>
 </div>
 {% endblock %}
