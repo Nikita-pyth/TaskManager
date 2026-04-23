@@ -5,9 +5,23 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user
 from app.schemas import TaskCreate, TaskUpdate, TaskOut
-from app.models import User, Task
+from app.models import User, Task, Category
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
+
+
+def _validate_category(db: Session, category_id: Optional[int], user_id: int) -> None:
+    if category_id is None:
+        return
+    exists = db.query(Category).filter(
+        Category.id == category_id,
+        Category.user_id == user_id,
+    ).first()
+    if not exists:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Category not found",
+        )
 
 
 @router.get("/", response_model=list[TaskOut])
@@ -51,6 +65,7 @@ def create_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _validate_category(db, data.category_id, current_user.id)
     task = Task(
         title=data.title,
         description=data.description,
@@ -95,7 +110,11 @@ def update_task(
     if not task:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    update_data = data.model_dump(exclude_unset=True)
+    if "category_id" in update_data:
+        _validate_category(db, update_data["category_id"], current_user.id)
+
+    for field, value in update_data.items():
         setattr(task, field, value)
 
     db.commit()
