@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 from fastapi import HTTPException
-from fastapi.testclient import TestClient
 
 
 # ── Auth utility imports ────────────────────────────────────────────
@@ -132,45 +131,11 @@ def test_oauth2_scheme_exists():
 
 # ── Auth router / endpoints (using TestClient) ─────────────────────
 
-@pytest.fixture()
-def app():
-    """Create a FastAPI app with auth router and test DB."""
-    from fastapi import FastAPI
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    from app.config import settings
-    from app.database import Base
-    from app.routers.auth import router
-    from app.dependencies import get_db
-    import app.models  # noqa: F401
-
-    engine = create_engine(settings.DATABASE_URL)
-    TestSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-    Base.metadata.create_all(bind=engine)
-
-    application = FastAPI()
-    application.include_router(router)
-
-    def override_get_db():
-        db = TestSession()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    application.dependency_overrides[get_db] = override_get_db
-
-    yield application, engine
-
-    Base.metadata.drop_all(bind=engine)
-
-
-@pytest.fixture()
-def client(app):
-    application, _ = app
-    return TestClient(application)
+# `client` comes from tests/conftest.py. Truncate tables before each test
+# so duplicate-email / duplicate-username tests don't collide across runs.
+@pytest.fixture(autouse=True)
+def _isolate(clean_tables):
+    pass
 
 
 # ── Register endpoint ──────────────────────────────────────────────

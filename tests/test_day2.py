@@ -1,7 +1,7 @@
 """Day 2 tests — Alembic migrations and Pydantic schemas."""
 
 import pytest
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timedelta, timezone
 from pydantic import ValidationError
 from sqlalchemy import inspect, text
 
@@ -275,16 +275,17 @@ def test_task_create_minimal():
 def test_task_create_full():
     from app.schemas import TaskCreate
 
+    future = date.today() + timedelta(days=30)
     t = TaskCreate(
         title="Deploy app",
         description="Push to production",
         status="in_progress",
         priority="high",
-        due_date=date(2026, 3, 15),
+        due_date=future,
         category_id=5,
     )
     assert t.title == "Deploy app"
-    assert t.due_date == date(2026, 3, 15)
+    assert t.due_date == future
     assert t.category_id == 5
 
 

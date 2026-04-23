@@ -104,13 +104,8 @@ def test_task_defaults():
 
 @pytest.fixture(autouse=False)
 def create_tables():
-    """Create all tables before DB tests, drop them after."""
-    from app.database import engine, Base
-    import app.models  # noqa: F401 — ensure models are registered on Base
-
-    Base.metadata.create_all(engine)
+    """Tables are created once per session by conftest via Alembic migrations."""
     yield
-    Base.metadata.drop_all(engine)
 
 
 def test_tables_exist_in_db(create_tables):

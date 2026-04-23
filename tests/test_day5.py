@@ -1,14 +1,6 @@
 """Day 5 tests — HTML Templates & Page Routes."""
 
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-
-@pytest.fixture(scope="module")
-def client():
-    return TestClient(app)
+# `client` is provided by tests/conftest.py.
 
 
 # ── Page routes ─────────────────────────────────────────────────────

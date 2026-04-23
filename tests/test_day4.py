@@ -1,50 +1,16 @@
 """Day 4 tests — Categories & Tasks CRUD API with filtering, sorting, and user scoping."""
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from app.config import settings
-from app.database import Base
-from app.routers import auth, categories, tasks
-from app.dependencies import get_db
-import app.models  # noqa: F401
 
 
 # ── Fixtures ────────────────────────────────────────────────────────
 
-@pytest.fixture(scope="module")
-def app_and_engine():
-    engine = create_engine(settings.DATABASE_URL)
-    TestSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-    Base.metadata.create_all(bind=engine)
-
-    application = FastAPI()
-    application.include_router(auth.router)
-    application.include_router(categories.router)
-    application.include_router(tasks.router)
-
-    def override_get_db():
-        db = TestSession()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    application.dependency_overrides[get_db] = override_get_db
-
-    yield application, engine
-
-    Base.metadata.drop_all(bind=engine)
-
-
-@pytest.fixture(scope="module")
-def client(app_and_engine):
-    application, _ = app_and_engine
-    return TestClient(application)
+# `client` is provided by tests/conftest.py. The module shares state across
+# tests via `auth_header`, so truncate once per module to give this module
+# a clean slate without disturbing per-test state.
+@pytest.fixture(scope="module", autouse=True)
+def _isolate(clean_tables_module):
+    pass
 
 
 @pytest.fixture(scope="module")
