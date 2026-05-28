@@ -2,6 +2,7 @@
 
 import pytest
 from sqlalchemy import inspect, text
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 
 # ── Config ───────────────────────────────────────────────────────────
@@ -18,26 +19,24 @@ def test_settings_loads():
 
 # ── Database connection ──────────────────────────────────────────────
 
-def test_engine_connects():
-    """Engine can reach the PostgreSQL server."""
+async def test_engine_connects():
+    """Async engine can reach the PostgreSQL server."""
     from app.database import engine
 
-    with engine.connect() as conn:
-        result = conn.execute(text("SELECT 1"))
+    assert isinstance(engine, AsyncEngine)
+    async with engine.connect() as conn:
+        result = await conn.execute(text("SELECT 1"))
         assert result.scalar() == 1
 
 
-def test_session_works():
-    """SessionLocal produces a usable session."""
+async def test_session_works():
+    """SessionLocal produces a usable async session."""
     from app.database import SessionLocal
 
-    session = SessionLocal()
-    try:
-        result = session.execute(text("SELECT current_database()"))
+    async with SessionLocal() as session:
+        result = await session.execute(text("SELECT current_database()"))
         db_name = result.scalar()
         assert db_name, "Should return the current database name"
-    finally:
-        session.close()
 
 
 # ── Models ───────────────────────────────────────────────────────────
@@ -108,11 +107,9 @@ def create_tables():
     yield
 
 
-def test_tables_exist_in_db(create_tables):
+def test_tables_exist_in_db(create_tables, sync_engine):
     """All three tables actually exist in PostgreSQL."""
-    from app.database import engine
-
-    with engine.connect() as conn:
+    with sync_engine.connect() as conn:
         result = conn.execute(text(
             "SELECT table_name FROM information_schema.tables "
             "WHERE table_schema = 'public'"
@@ -124,12 +121,11 @@ def test_tables_exist_in_db(create_tables):
     assert "tasks" in tables, "tasks table not found in DB"
 
 
-def test_db_columns_match_models(create_tables):
+def test_db_columns_match_models(create_tables, sync_engine):
     """Column names in PostgreSQL match the ORM model definitions."""
-    from app.database import engine
     from app.models import User, Category, Task
 
-    db_inspector = inspect(engine)
+    db_inspector = inspect(sync_engine)
 
     for model in (User, Category, Task):
         table = model.__tablename__

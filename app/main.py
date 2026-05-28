@@ -2,11 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from app.database import engine, Base
 import app.models  # noqa: F401 — register models on Base
 from app.routers import auth, categories, tasks, pages
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Task Manager")
 

@@ -1,10 +1,6 @@
 """Day 3 tests — Authentication: auth utilities, dependencies, and auth endpoints."""
 
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import MagicMock
-
-from fastapi import HTTPException
 
 
 # ── Auth utility imports ────────────────────────────────────────────
@@ -110,16 +106,17 @@ def test_dependencies_module_imports():
     assert all([get_db, get_current_user])
 
 
-def test_get_db_yields_session():
-    """get_db yields a session and closes it."""
+async def test_get_db_yields_session():
+    """get_db is an async generator that yields a session and closes it."""
     from app.dependencies import get_db
+    from sqlalchemy.ext.asyncio import AsyncSession
 
     gen = get_db()
-    session = next(gen)
-    assert session is not None
+    session = await gen.__anext__()
+    assert isinstance(session, AsyncSession)
     try:
-        gen.send(None)
-    except StopIteration:
+        await gen.__anext__()
+    except StopAsyncIteration:
         pass
 
 
@@ -129,7 +126,7 @@ def test_oauth2_scheme_exists():
     assert oauth2_scheme is not None
 
 
-# ── Auth router / endpoints (using TestClient) ─────────────────────
+# ── Auth router / endpoints (using async client) ───────────────────
 
 # `client` comes from tests/conftest.py. Truncate tables before each test
 # so duplicate-email / duplicate-username tests don't collide across runs.
@@ -140,8 +137,8 @@ def _isolate(clean_tables):
 
 # ── Register endpoint ──────────────────────────────────────────────
 
-def test_register_success(client):
-    resp = client.post("/api/auth/register", json={
+async def test_register_success(client):
+    resp = await client.post("/api/auth/register", json={
         "username": "testuser",
         "email": "test@example.com",
         "password": "secret123",
@@ -156,13 +153,13 @@ def test_register_success(client):
     assert "hashed_password" not in data
 
 
-def test_register_duplicate_email(client):
-    client.post("/api/auth/register", json={
+async def test_register_duplicate_email(client):
+    await client.post("/api/auth/register", json={
         "username": "user1",
         "email": "dup@example.com",
         "password": "pass",
     })
-    resp = client.post("/api/auth/register", json={
+    resp = await client.post("/api/auth/register", json={
         "username": "user2",
         "email": "dup@example.com",
         "password": "pass",
@@ -170,13 +167,13 @@ def test_register_duplicate_email(client):
     assert resp.status_code == 409
 
 
-def test_register_duplicate_username(client):
-    client.post("/api/auth/register", json={
+async def test_register_duplicate_username(client):
+    await client.post("/api/auth/register", json={
         "username": "samename",
         "email": "a@example.com",
         "password": "pass",
     })
-    resp = client.post("/api/auth/register", json={
+    resp = await client.post("/api/auth/register", json={
         "username": "samename",
         "email": "b@example.com",
         "password": "pass",
@@ -184,8 +181,8 @@ def test_register_duplicate_username(client):
     assert resp.status_code == 409
 
 
-def test_register_invalid_email(client):
-    resp = client.post("/api/auth/register", json={
+async def test_register_invalid_email(client):
+    resp = await client.post("/api/auth/register", json={
         "username": "user",
         "email": "not-an-email",
         "password": "pass",
@@ -193,8 +190,8 @@ def test_register_invalid_email(client):
     assert resp.status_code == 422
 
 
-def test_register_missing_fields(client):
-    resp = client.post("/api/auth/register", json={
+async def test_register_missing_fields(client):
+    resp = await client.post("/api/auth/register", json={
         "username": "user",
     })
     assert resp.status_code == 422
@@ -202,13 +199,13 @@ def test_register_missing_fields(client):
 
 # ── Login endpoint ──────────────────────────────────────────────────
 
-def test_login_success(client):
-    client.post("/api/auth/register", json={
+async def test_login_success(client):
+    await client.post("/api/auth/register", json={
         "username": "loginuser",
         "email": "login@example.com",
         "password": "mypassword",
     })
-    resp = client.post("/api/auth/login", json={
+    resp = await client.post("/api/auth/login", json={
         "email": "login@example.com",
         "password": "mypassword",
     })
@@ -219,37 +216,37 @@ def test_login_success(client):
     assert len(data["access_token"]) > 0
 
 
-def test_login_wrong_password(client):
-    client.post("/api/auth/register", json={
+async def test_login_wrong_password(client):
+    await client.post("/api/auth/register", json={
         "username": "user3",
         "email": "user3@example.com",
         "password": "rightpass",
     })
-    resp = client.post("/api/auth/login", json={
+    resp = await client.post("/api/auth/login", json={
         "email": "user3@example.com",
         "password": "wrongpass",
     })
     assert resp.status_code == 401
 
 
-def test_login_nonexistent_email(client):
-    resp = client.post("/api/auth/login", json={
+async def test_login_nonexistent_email(client):
+    resp = await client.post("/api/auth/login", json={
         "email": "nobody@example.com",
         "password": "whatever",
     })
     assert resp.status_code == 401
 
 
-def test_login_token_is_valid_jwt(client):
+async def test_login_token_is_valid_jwt(client):
     """The token returned by login can be decoded."""
     from app.auth import verify_access_token
 
-    client.post("/api/auth/register", json={
+    await client.post("/api/auth/register", json={
         "username": "jwtuser",
         "email": "jwt@example.com",
         "password": "pass123",
     })
-    resp = client.post("/api/auth/login", json={
+    resp = await client.post("/api/auth/login", json={
         "email": "jwt@example.com",
         "password": "pass123",
     })

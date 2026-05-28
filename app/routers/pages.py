@@ -8,20 +8,20 @@ router = APIRouter(tags=["pages"])
 
 
 @router.get("/")
-def index():
+async def index():
     return RedirectResponse(url="/login")
 
 
 @router.get("/login")
-def login_page(request: Request):
+async def login_page(request: Request):
     return templates.TemplateResponse(request, "login.html")
 
 
 @router.get("/register")
-def register_page(request: Request):
+async def register_page(request: Request):
     return templates.TemplateResponse(request, "register.html")
 
 
 @router.get("/dashboard")
-def dashboard_page(request: Request):
+async def dashboard_page(request: Request):
     return templates.TemplateResponse(request, "dashboard.html")

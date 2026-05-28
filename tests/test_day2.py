@@ -32,11 +32,9 @@ def test_alembic_env_sets_target_metadata():
 
 # ── Migration applied correctly ─────────────────────────────────────
 
-def test_alembic_version_table_exists():
+def test_alembic_version_table_exists(sync_engine):
     """alembic_version table exists, proving migrations have been applied."""
-    from app.database import engine
-
-    with engine.connect() as conn:
+    with sync_engine.connect() as conn:
         result = conn.execute(text(
             "SELECT table_name FROM information_schema.tables "
             "WHERE table_schema = 'public' AND table_name = 'alembic_version'"
@@ -44,22 +42,18 @@ def test_alembic_version_table_exists():
         assert result.fetchone() is not None, "alembic_version table missing"
 
 
-def test_alembic_current_revision_is_set():
+def test_alembic_current_revision_is_set(sync_engine):
     """A migration revision has been recorded in alembic_version."""
-    from app.database import engine
-
-    with engine.connect() as conn:
+    with sync_engine.connect() as conn:
         result = conn.execute(text("SELECT version_num FROM alembic_version"))
         row = result.fetchone()
         assert row is not None, "No revision found — migration not applied"
         assert len(row[0]) > 0, "Revision string is empty"
 
 
-def test_migration_created_all_tables():
+def test_migration_created_all_tables(sync_engine):
     """The migration created users, categories, and tasks tables."""
-    from app.database import engine
-
-    db_inspector = inspect(engine)
+    db_inspector = inspect(sync_engine)
     tables = set(db_inspector.get_table_names())
 
     assert "users" in tables
@@ -67,31 +61,25 @@ def test_migration_created_all_tables():
     assert "tasks" in tables
 
 
-def test_migration_users_columns():
+def test_migration_users_columns(sync_engine):
     """users table has correct columns after migration."""
-    from app.database import engine
-
-    db_inspector = inspect(engine)
+    db_inspector = inspect(sync_engine)
     cols = {c["name"] for c in db_inspector.get_columns("users")}
     expected = {"id", "email", "username", "hashed_password", "created_at"}
     assert cols == expected
 
 
-def test_migration_categories_columns():
+def test_migration_categories_columns(sync_engine):
     """categories table has correct columns after migration."""
-    from app.database import engine
-
-    db_inspector = inspect(engine)
+    db_inspector = inspect(sync_engine)
     cols = {c["name"] for c in db_inspector.get_columns("categories")}
     expected = {"id", "name", "user_id", "created_at"}
     assert cols == expected
 
 
-def test_migration_tasks_columns():
+def test_migration_tasks_columns(sync_engine):
     """tasks table has correct columns after migration."""
-    from app.database import engine
-
-    db_inspector = inspect(engine)
+    db_inspector = inspect(sync_engine)
     cols = {c["name"] for c in db_inspector.get_columns("tasks")}
     expected = {
         "id", "title", "description", "status", "priority",
@@ -100,22 +88,18 @@ def test_migration_tasks_columns():
     assert cols == expected
 
 
-def test_migration_users_email_index():
+def test_migration_users_email_index(sync_engine):
     """users.email has a unique index after migration."""
-    from app.database import engine
-
-    db_inspector = inspect(engine)
+    db_inspector = inspect(sync_engine)
     indexes = db_inspector.get_indexes("users")
     email_indexes = [i for i in indexes if "email" in i["column_names"]]
     assert len(email_indexes) > 0, "No index on users.email"
     assert email_indexes[0]["unique"] is True
 
 
-def test_migration_foreign_keys_categories():
+def test_migration_foreign_keys_categories(sync_engine):
     """categories.user_id references users.id."""
-    from app.database import engine
-
-    db_inspector = inspect(engine)
+    db_inspector = inspect(sync_engine)
     fks = db_inspector.get_foreign_keys("categories")
     user_fks = [fk for fk in fks if fk["referred_table"] == "users"]
     assert len(user_fks) == 1
@@ -123,11 +107,9 @@ def test_migration_foreign_keys_categories():
     assert user_fks[0]["referred_columns"] == ["id"]
 
 
-def test_migration_foreign_keys_tasks():
+def test_migration_foreign_keys_tasks(sync_engine):
     """tasks has foreign keys to users.id and categories.id."""
-    from app.database import engine
-
-    db_inspector = inspect(engine)
+    db_inspector = inspect(sync_engine)
     fks = db_inspector.get_foreign_keys("tasks")
     referred = {fk["referred_table"]: fk for fk in fks}
 

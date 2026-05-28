@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db, get_current_user
 from app.schemas import CategoryCreate, CategoryOut
@@ -9,37 +10,43 @@ router = APIRouter(prefix="/api/categories", tags=["categories"])
 
 
 @router.get("/", response_model=list[CategoryOut])
-def list_categories(
-    db: Session = Depends(get_db),
+async def list_categories(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(Category).filter(Category.user_id == current_user.id).all()
+    result = await db.execute(
+        select(Category).where(Category.user_id == current_user.id)
+    )
+    return result.scalars().all()
 
 
 @router.post("/", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
-def create_category(
+async def create_category(
     data: CategoryCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     category = Category(name=data.name, user_id=current_user.id)
     db.add(category)
-    db.commit()
-    db.refresh(category)
+    await db.commit()
+    await db.refresh(category)
     return category
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_category(
+async def delete_category(
     category_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    category = db.query(Category).filter(
-        Category.id == category_id,
-        Category.user_id == current_user.id,
-    ).first()
+    result = await db.execute(
+        select(Category).where(
+            Category.id == category_id,
+            Category.user_id == current_user.id,
+        )
+    )
+    category = result.scalar_one_or_none()
     if not category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
-    db.delete(category)
-    db.commit()
+    await db.delete(category)
+    await db.commit()

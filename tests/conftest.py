@@ -39,8 +39,9 @@ os.environ["DATABASE_URL"] = _TEST_URL
 
 
 import pytest
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
-from fastapi.testclient import TestClient
 
 
 def _admin_exec(sql: str) -> None:
@@ -53,9 +54,13 @@ def _admin_exec(sql: str) -> None:
 
 
 def _truncate_all() -> None:
-    from app.database import engine
-    with engine.begin() as conn:
-        conn.execute(text("TRUNCATE tasks, categories, users RESTART IDENTITY CASCADE"))
+    from app.database import SYNC_DATABASE_URL
+    engine = create_engine(SYNC_DATABASE_URL)
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("TRUNCATE tasks, categories, users RESTART IDENTITY CASCADE"))
+    finally:
+        engine.dispose()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -73,19 +78,24 @@ def _test_database():
 
     yield
 
-    try:
-        from app.database import engine
-        engine.dispose()
-    except Exception:
-        pass
     _admin_exec(f"DROP DATABASE IF EXISTS {_TEST_DB_NAME} WITH (FORCE)")
 
 
-@pytest.fixture(scope="session")
-def client():
+@pytest_asyncio.fixture(scope="session")
+async def client():
     from app.main import app
-    with TestClient(app) as c:
-        yield c
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+
+
+@pytest.fixture(scope="session")
+def sync_engine():
+    """Sync SQLAlchemy engine for tests that introspect schema."""
+    from app.database import SYNC_DATABASE_URL
+    engine = create_engine(SYNC_DATABASE_URL)
+    yield engine
+    engine.dispose()
 
 
 @pytest.fixture
